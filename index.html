@@ -671,8 +671,8 @@ function nextInvNo(type){
   return prefix + String(n).padStart(4,'0');
 }
 
-function newInvoice(type){ openInvoiceEditor({id:'',no:nextInvNo(type),type,clientId:'',date:today(),dueDate:'',items:[{desc:'',hsn:'9992',qty:1,rate:0,gstRate:18}],notes:'',payments:[]}); }
-function newInvoiceFor(cid,type){ openInvoiceEditor({id:'',no:nextInvNo(type),type,clientId:cid,date:today(),dueDate:'',items:[{desc:'',hsn:'9992',qty:1,rate:0,gstRate:18}],notes:'',payments:[]}); }
+function newInvoice(type){ openInvoiceEditor({id:'',no:nextInvNo(type),type,clientId:'',date:today(),dueDate:'',items:[{desc:'',hsn:'9992',qty:1,rate:0,gstRate:18,eventDate:''}],notes:'',payments:[]}); }
+function newInvoiceFor(cid,type){ openInvoiceEditor({id:'',no:nextInvNo(type),type,clientId:cid,date:today(),dueDate:'',items:[{desc:'',hsn:'9992',qty:1,rate:0,gstRate:18,eventDate:''}],notes:'',payments:[]}); }
 function editInvoice(id){ const inv=state.invoices.find(x=>x.id===id); if(inv) openInvoiceEditor(JSON.parse(JSON.stringify(inv))); }
 function convertToTax(id){
   const p=state.invoices.find(x=>x.id===id); if(!p) return;
@@ -725,7 +725,7 @@ function invEditorHTML(inv){
       <h3>Line Items</h3>
       <div style="overflow-x:auto">
       <table class="items" id="itemsTable">
-        <thead><tr><th style="width:40%">Description</th><th>HSN/SAC</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">GST%</th><th class="num">Amount</th><th></th></tr></thead>
+        <thead><tr><th style="width:32%">Description</th><th>Event Date</th><th>HSN/SAC</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">GST%</th><th class="num">Amount</th><th></th></tr></thead>
         <tbody id="itemsBody"></tbody>
       </table>
       </div>
@@ -750,9 +750,10 @@ function renderInvoiceItems(){
   const body=$('#itemsBody'); if(!body) return;
   body.innerHTML=_editInv.items.map((it,i)=>`
     <tr>
-      <td><input value="${esc(it.desc||'')}" onchange="updItem(${i},'desc',this.value)" placeholder="e.g. Tuition Services"></td>
+      <td><input value="${esc(it.desc||'')}" onchange="updItem(${i},'desc',this.value)" placeholder="e.g. Career fair in Kolkata – 4 schools"></td>
+      <td><input value="${esc(it.eventDate||'')}" onchange="updItem(${i},'eventDate',this.value)" placeholder="e.g. 07.07.25 to 11.07.25" style="width:130px;font-size:12px"></td>
       <td><input value="${esc(it.hsn||'')}" onchange="updItem(${i},'hsn',this.value)" style="width:80px"></td>
-      <td><input type="number" min="0" step="0.01" value="${it.qty||0}" onchange="updItem(${i},'qty',this.value)" class="num" style="width:70px"></td>
+      <td><input type="number" min="0" step="0.01" value="${it.qty||0}" onchange="updItem(${i},'qty',this.value)" class="num" style="width:60px"></td>
       <td><input type="number" min="0" step="0.01" value="${it.rate||0}" onchange="updItem(${i},'rate',this.value)" class="num" style="width:90px"></td>
       <td><input type="number" min="0" step="0.01" value="${it.gstRate||0}" onchange="updItem(${i},'gstRate',this.value)" class="num" style="width:60px"></td>
       <td class="num" style="font-family:'JetBrains Mono',monospace;font-size:12px">${fmt((it.qty||0)*(it.rate||0))}</td>
@@ -762,10 +763,10 @@ function renderInvoiceItems(){
 }
 
 function updItem(i,f,v){
-  _editInv.items[i][f] = (f==='desc'||f==='hsn') ? v : Number(v)||0;
+  _editInv.items[i][f] = (f==='desc'||f==='hsn'||f==='eventDate') ? v : Number(v)||0;
   renderInvoiceItems(); recalcInvoice();
 }
-function addItemRow(){ _editInv.items.push({desc:'',hsn:'9992',qty:1,rate:0,gstRate:18}); renderInvoiceItems(); recalcInvoice(); }
+function addItemRow(){ _editInv.items.push({desc:'',hsn:'9992',qty:1,rate:0,gstRate:18,eventDate:''}); renderInvoiceItems(); recalcInvoice(); }
 function delItem(i){ _editInv.items.splice(i,1); if(!_editInv.items.length) addItemRow(); else {renderInvoiceItems(); recalcInvoice();} }
 
 function invTotal(inv){
@@ -1288,10 +1289,11 @@ function downloadInvoice(id){
   y+=2;
 
   // ── Items table
-  const head=[['#','Description','HSN','Qty','Rate','GST %','Amount']];
+  const head=[['#','Description','Event Date','HSN','Qty','Rate','GST %','Amount']];
   const body=inv.items.map((it,i)=>[
     String(i+1),
     it.desc||'',
+    it.eventDate||'',
     it.hsn||'',
     String(it.qty||0),
     (Number(it.rate)||0).toFixed(2),
@@ -1303,7 +1305,7 @@ function downloadInvoice(id){
     theme:'plain',
     styles:{font:'helvetica',fontSize:9,cellPadding:2.5,textColor:[14,15,18]},
     headStyles:{fillColor:[14,15,18],textColor:[250,247,242],fontStyle:'bold',fontSize:8,halign:'left'},
-    columnStyles:{0:{cellWidth:8},2:{cellWidth:18},3:{halign:'right',cellWidth:14},4:{halign:'right',cellWidth:22},5:{halign:'right',cellWidth:16},6:{halign:'right',cellWidth:26}},
+    columnStyles:{0:{cellWidth:7},2:{cellWidth:28,fontSize:8},3:{cellWidth:16,fontSize:8},4:{halign:'right',cellWidth:12},5:{halign:'right',cellWidth:20},6:{halign:'right',cellWidth:14},7:{halign:'right',cellWidth:24}},
     alternateRowStyles:{fillColor:[243,238,229]},
     margin:{left:M,right:M}
   });
@@ -2152,8 +2154,8 @@ async function boot(){
     phone: '',
     email: '',
     bank: 'Beneficiary Name: Student Outreach\nBank: Axis Bank, Tollygunge, Kolkata\nA/c No: 920020071558225\nIFSC: UTIB0000045',
-    taxPrefix: 'SO/INV/25-26/',
-    proPrefix: 'SO/PI/25-26/',
+    taxPrefix: 'SO/INV/26-27/',
+    proPrefix: 'SO/PI/26-27/',
     logo: COMPANY_LOGO
   };
   let seeded = false;
